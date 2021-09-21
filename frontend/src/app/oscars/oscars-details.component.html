@@ -1,0 +1,85 @@
+<form [formGroup]="detailsForm" novalidate (ngSubmit)="onSubmit()">
+  <mat-card class="shipping-card">
+    <mat-card-header>
+      <mat-card-title>Oscar Best Picture Movie</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Title" formControlName="title">
+            <mat-error *ngIf="detailsForm.controls['title'].hasError('required')">
+              Title is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Oscar year" formControlName="oscarYear">
+            <mat-error *ngIf="detailsForm.controls['oscarYear'].hasError('required')">
+              Oscar year is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Studio" formControlName="studio">
+            <mat-error *ngIf="detailsForm.controls['studio'].hasError('required')">
+              Studio is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-radio-group formControlName="award">
+            <mat-radio-button value="Nominee">Nominne</mat-radio-button>
+            <mat-radio-button value="Winner">Winner</mat-radio-button>
+          </mat-radio-group>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Year of release" formControlName="yearOfRelease">
+            <mat-error *ngIf="detailsForm.controls['yearOfRelease'].hasError('required')">
+              Year of release is <strong>required</strong>
+            </mat-error> 
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput #movieTime maxlength="5" placeholder="Movie time" type="number" formControlName="movieTime">
+            <mat-hint align="end">{{movieTime.value.length}} / 5</mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field [style.width.%]="100" appearance="fill">
+            <mat-label>Genre</mat-label>
+            <mat-select matInput formControlName="genres" multiple> 
+                <mat-option *ngFor="let genre of genres" [value]="genre">{{genre}}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="detailsForm.controls['genres'].hasError('required')">
+              Genre is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <textarea matInput placeholder="Critic consensus" formControlName="criticConsensus"></textarea>
+          </mat-form-field>
+        </div>
+      </div>      
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" type="submit">Save</button>
+      <button mat-raised-button color="warn" type="button" (click)="goBack()">Cancel</button>
+    </mat-card-actions>
+  </mat-card>
+</form>

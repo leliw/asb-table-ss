@@ -33,6 +33,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { OscarsComponent } from './oscars/oscars.component';
+import { OscarsDetailsComponent } from './oscars/oscars-details.component';
+import { MatRadioModule } from '@angular/material/radio';
+import { OscarsDeleteComponent } from './oscars/oscars-delete.component';
 
 @Injectable()
 export class XhrInterceptor implements HttpInterceptor {
@@ -65,6 +68,8 @@ export class XhrInterceptor implements HttpInterceptor {
     UsersComponent,
     UsersDialogComponent,
     OscarsComponent,
+    OscarsDetailsComponent,
+    OscarsDeleteComponent,
   ],
   imports: [
     BrowserModule,
@@ -72,12 +77,13 @@ export class XhrInterceptor implements HttpInterceptor {
     ReactiveFormsModule,
     AppRoutingModule,
     BrowserAnimationsModule,
-    LayoutModule,
+    LayoutModule, 
     MatToolbarModule,
     MatButtonModule,
     MatCardModule,
     MatDialogModule,
     MatFormFieldModule,
+    MatRadioModule, 
     MatSelectModule,
     MatSidenavModule,
     MatSliderModule,
@@ -95,6 +101,7 @@ export class XhrInterceptor implements HttpInterceptor {
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
+    MatRadioModule,
   ],
   providers: [AppService, { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptor, multi: true }],
   bootstrap: [AppComponent]

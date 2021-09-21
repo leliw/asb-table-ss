@@ -1,10 +1,10 @@
 import { DataSource } from '@angular/cdk/collections';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
-import { map, startWith, switchMap } from 'rxjs/operators';
-import { Observable, of as observableOf, merge, of } from 'rxjs';
+import { catchError, map, startWith, switchMap } from 'rxjs/operators';
+import { Observable, of as observableOf, merge, of, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 
 export interface OscarsItem {
   id: number;
@@ -15,6 +15,11 @@ export interface OscarsItem {
   yearOfRelease: number;
   movieTime: number;
   genre: string;
+  imdbRating: number;
+  imdbVotes: number;
+  moveInfo: string;
+  criticConsensus: string;
+  contentRating: string;
 }
 
 interface PaginatedItems {
@@ -55,6 +60,12 @@ export class OscarsDataSource extends DataSource<OscarsItem> {
       throw Error('Please set the paginator and sort on the data source before connecting.');
     }
   }
+  
+  /**
+   *  Called when the table is being destroyed. Use this function, to clean up
+   * any open connections or free any held resources that were set up during connect.
+   */
+  disconnect(): void { }
 
   private getPagedData(): Observable<OscarsItem[]> {
     let params = new HttpParams()
@@ -70,11 +81,68 @@ export class OscarsDataSource extends DataSource<OscarsItem> {
       }))
   }
 
-  /**
-   *  Called when the table is being destroyed. Use this function, to clean up
-   * any open connections or free any held resources that were set up during connect.
-   */
-  disconnect(): void { }
+  public getItem(id: number): Observable<OscarsItem> {
+    return this.http.get<OscarsItem>(this.apiUrl + '/' + id);
+  }
+
+  public addItem(newItem: OscarsItem) {
+    return this.http.post<OscarsItem>(this.apiUrl, newItem)
+      .pipe(
+        catchError(this.handleError),
+        map((savedItem) => {
+          this.data.push(savedItem);
+          if (this.paginator !== undefined)
+              this.paginator.page.emit();
+        })
+      );
+  }
+
+  public updateItem(updatedItem: OscarsItem): Observable<void> {
+    console.log(updatedItem);
+    return this.http.put<OscarsItem>(this.apiUrl + '/' + updatedItem.id, updatedItem)
+      .pipe(
+        catchError(this.handleError),
+        map((savedItem) => {
+          this.data = this.data.filter((value, key) => {
+            if(value.id == savedItem.id && this.paginator !== undefined) {
+              this.paginator.page.emit();
+            }
+            return true;
+          })
+        }
+        )
+      );
+  }
+
+  deleteItem(deletedItem: OscarsItem): Observable<void> {
+    return this.http.delete(this.apiUrl + '/' + deletedItem.id)
+      .pipe(
+        catchError(this.handleError),
+        map(() => {
+          this.data = this.data.filter((value) => {
+            return value.id != deletedItem.id;
+          });
+          if (this.paginator !== undefined)
+            this.paginator.page.emit();
+        })
+      );
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    if (error.status === 0) {
+      // A client-side or network error occurred. Handle it accordingly.
+      console.error('An error occurred:', error.error);
+    } else {
+      // The backend returned an unsuccessful response code.
+      // The response body may contain clues as to what went wrong.
+      console.error(
+        `Backend returned code ${error.status}, ` +
+        `body was: ${error.error}`);
+    }
+    // Return an observable with a user-facing error message.
+    return throwError(
+      'Something bad happened; please try again later.');
+  }
 
 }
 
