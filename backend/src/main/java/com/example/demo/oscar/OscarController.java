@@ -53,7 +53,7 @@ public class OscarController {
 		}
 	}
 
-	@GetMapping("/api/oscars/{Oscarname}")
+	@GetMapping("/api/oscars/{Id}")
 	public Oscar one(@PathVariable Integer Id) throws Exception {
 		Oscar ret = this.repository.findById(Id)
 				.orElseThrow(() -> new OscarNotFoundException(Id));
@@ -66,10 +66,23 @@ public class OscarController {
 		return ret;
 	}
 	
-	@PutMapping("/api/oscars/{Oscarname}")
+	@PutMapping("/api/oscars/{Id}")
 	public Oscar replace(@RequestBody Oscar newItem, @PathVariable Integer Id)
 			throws Exception {
 		return repository.findById(Id).map(item -> {
+			item.title = newItem.title;
+			item.oscarYear = newItem.oscarYear;
+			item.studio = newItem.studio;
+			item.award = newItem.award;
+			item.yearOfRelease = newItem.yearOfRelease;
+			item.movieTime = newItem.movieTime;
+			item.genre = newItem.genre;
+			item.imdbRating = newItem.imdbRating;
+			item.imdbVotes = newItem.imdbVotes;
+			item.moveInfo = newItem.moveInfo;
+			item.criticConsensus = newItem.criticConsensus;
+			item.contenRating = newItem.contenRating;
+			
 			Oscar ret = repository.save(item);
 			return ret;
 		}).orElseGet(() -> {
@@ -78,7 +91,7 @@ public class OscarController {
 		});
 	}	
 
-	@DeleteMapping("/api/oscars/{Oscarname}")
+	@DeleteMapping("/api/oscars/{Id}")
 	public void delete(@PathVariable Integer Id) {
 		repository.deleteById(Id);
 	}

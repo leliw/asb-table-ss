@@ -28,26 +28,23 @@ create table oscars (
 	award varchar(7),
 	year_of_release integer,
 	movie_time integer,
-	genre varchar(255)
+	genre varchar(255),
+	imdb_rating real,
+	imdb_votes integer,
+	move_info text, 
+	critic_consensus text,
+	conten_rating varchar(25)
 );
 create unique index ix_oscars_title_year on oscars (title, year_of_release);
 ```
 
 And add data in *data-postgresql.sql*.
 ```sql
-insert into oscars(title, oscar_year, studio, award, year_of_release, movie_time, genre) values
-('Wings', '1927/28', 'Famous Players-Lasky', 'Winner', '1927', '144', 'Drama,Romance,War'),
-('7th Heaven', '1927/28', 'Fox', 'Nominee', '1927', '110', 'Drama,Romance'),
-('The Racket', '1927/28', 'The Caddo Company', 'Nominee', '1928', '84', 'Crime,Drama,Film-Noir'),
-('The Broadway Melody', '1928/29', 'Metro-Goldwyn-Mayer', 'Winner', '1929', '100', 'Drama,Musical,Romance'),
-('Alibi', '1928/29', 'Feature Productions', 'Nominee', '1929', '91', 'Action,Crime,Romance'),
-('Hollywood Revue', '1928/29', 'Metro-Goldwyn-Mayer', 'Nominee', '1929', '130', 'Comedy,Music'),
-('In Old Arizona', '1928/29', 'Fox', 'Nominee', '1928', '95', 'Western'),
-('The Patriot', '1928/29', 'Paramount Famous Lasky', 'Nominee', '1928', '113', 'Drama,History,Thriller'),
-('All Quiet on the Western Front', '1929/30', 'Universal', 'Winner', '1930', '152', 'Drama,War'),
-('The Big House', '1929/30', 'Cosmopolitan', 'Nominee', '1930', '87', 'Crime,Drama,Thriller'),
-('Disraeli', '1929/30', 'Warner Bros.', 'Nominee', '1929', '90', 'Biography,Drama,History'),
-('The Divorcee', '1929/30', 'Metro-Goldwyn-Mayer', 'Nominee', '1930', '84', 'Romance,Drama'),
+insert into oscars(title, oscar_year, studio, award, year_of_release, movie_time, genre, imdb_rating, imdb_votes, move_info, critic_consensus, conten_rating) values
+('Wings', '1927/28', 'Famous Players-Lasky', 'Winner', '1927', '144', 'Drama,Romance,War', '7.5', '12221', 'With World War I afoot, David Armstrong (Richard Arlen) and Jack Powell (Charles "Buddy" Rogers) join the military with an eye toward flying American fighter planes. They leave behind Mary Preston (Clara Bow), a local girl who''s in love with David but committed to Jack. Dispatched to France as newly minted pilots, the men take to the skies in one of the war''s climactic air battles, and as frantic Mary longs for the safe return of both men, one pays the ultimate price for his bravery.', 'Subsequent war epics may have borrowed heavily from the original Best Picture winner, but they''ve all lacked Clara Bow''s luminous screen presence and William Wellman''s deft direction.', 'PG-13'),
+('7th Heaven', '1927/28', 'Fox', 'Nominee', '1927', '110', 'Drama,Romance', '7.7', '3439', '', '', ''),
+('The Racket', '1927/28', 'The Caddo Company', 'Nominee', '1928', '84', 'Crime,Drama,Film-Noir', '6.7', '1257', '', '', ''),
+
 (...)
 ```
 
@@ -61,6 +58,7 @@ Oscar.java
 @Table(name = "oscars")
 public class Oscar {
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)	
 	public Integer id;
 	public String title;
 	public String oscarYear;
@@ -69,6 +67,11 @@ public class Oscar {
 	public Integer yearOfRelease;
 	public Integer movieTime;
 	public String genre;
+	public Double imdbRating;
+	public Integer imdbVotes;
+	public String moveInfo;
+	public String criticConsensus;
+	public String contenRating;	
 }
 ```
 
@@ -92,7 +95,7 @@ public class OscarController {
 		return ret;
 	}
 
-	@GetMapping("/api/oscars/{Oscarname}")
+	@GetMapping("/api/oscars/{Id}")
 	public Oscar one(@PathVariable Integer Id) throws Exception {
 		Oscar ret = this.repository.findById(Id)
 				.orElseThrow(() -> new OscarNotFoundException(Id));
@@ -105,10 +108,23 @@ public class OscarController {
 		return ret;
 	}
 	
-	@PutMapping("/api/oscars/{Oscarname}")
+	@PutMapping("/api/oscars/{Id}")
 	public Oscar replace(@RequestBody Oscar newItem, @PathVariable Integer Id)
 			throws Exception {
 		return repository.findById(Id).map(item -> {
+			item.title = newItem.title;
+			item.oscarYear = newItem.oscarYear;
+			item.studio = newItem.studio;
+			item.award = newItem.award;
+			item.yearOfRelease = newItem.yearOfRelease;
+			item.movieTime = newItem.movieTime;
+			item.genre = newItem.genre;
+			item.imdbRating = newItem.imdbRating;
+			item.imdbVotes = newItem.imdbVotes;
+			item.moveInfo = newItem.moveInfo;
+			item.criticConsensus = newItem.criticConsensus;
+			item.contenRating = newItem.contenRating;
+			
 			Oscar ret = repository.save(item);
 			return ret;
 		}).orElseGet(() -> {
@@ -117,7 +133,7 @@ public class OscarController {
 		});
 	}	
 
-	@DeleteMapping("/api/oscars/{Oscarname}")
+	@DeleteMapping("/api/oscars/{Id}")
 	public void delete(@PathVariable Integer Id) {
 		repository.deleteById(Id);
 	}

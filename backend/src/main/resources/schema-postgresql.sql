@@ -19,6 +19,11 @@ create table oscars (
 	award varchar(7),
 	year_of_release integer,
 	movie_time integer,
-	genre varchar(255)
+	genre varchar(255),
+	imdb_rating real,
+	imdb_votes integer,
+	move_info text, 
+	critic_consensus text,
+	conten_rating varchar(25)
 );
 create unique index ix_oscars_title_year on oscars (title, year_of_release);
