@@ -424,9 +424,445 @@ It's a bit strange so let me explain:
 3. *startWith()* adds an extra (empty - {}) object at the beginning of the stream so the pipe starts without emitting any event by *merge()*. It loads the first page wihout user interaction.
 4. *switchMap()* switches from one stream to another. In this case stream of emitted events is switched to the one returned by getPagedData() and this stream is returned by the connect() method.
 
+## Frontend CRUD
+
+In previous project records was edited in dialog window. Is't ok for small records, but for many fields in a record it's better to create separate window with it's own url. Let's generate details component based on address-form:
+
+```bash
+$ ng generate @angular/material:address-form oscars/oscars-details --flat
+```
+
+Add new routing definition (*app.module.ts*).
+```typescript
+  { path: 'oscars/:id', component: OscarsDetailsComponent,  canActivate: [AppService],  data: { role: "USER" } }
+```
+
+Define editing form (*oscar-details.component.html*) for all fields.
+```html
+<form [formGroup]="detailsForm" novalidate (ngSubmit)="onSubmit()">
+  <mat-card class="shipping-card">
+    <mat-card-header>
+      <mat-card-title>Oscar Best Picture Movie</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Title" formControlName="title">
+            <mat-error *ngIf="detailsForm.controls['title'].hasError('required')">
+              Title is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Oscar year" formControlName="oscarYear">
+            <mat-error *ngIf="detailsForm.controls['oscarYear'].hasError('required')">
+              Oscar year is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Studio" formControlName="studio">
+            <mat-error *ngIf="detailsForm.controls['studio'].hasError('required')">
+              Studio is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-radio-group formControlName="award">
+            <mat-radio-button value="Nominee">Nominne</mat-radio-button>
+            <mat-radio-button value="Winner">Winner</mat-radio-button>
+          </mat-radio-group>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput placeholder="Year of release" formControlName="yearOfRelease">
+            <mat-error *ngIf="detailsForm.controls['yearOfRelease'].hasError('required')">
+              Year of release is <strong>required</strong>
+            </mat-error> 
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field class="full-width">
+            <input matInput #movieTime maxlength="5" placeholder="Movie time" type="number" formControlName="movieTime">
+            <mat-hint align="end">{{movieTime.value.length}} / 5</mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field [style.width.%]="100" appearance="fill">
+            <mat-label>Genre</mat-label>
+            <mat-select matInput formControlName="genres" multiple> 
+                <mat-option *ngFor="let genre of genres" [value]="genre">{{genre}}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="detailsForm.controls['genres'].hasError('required')">
+              Genre is <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+      </div>
+      <div class="row">
+        <div class="col">
+          <mat-form-field class="full-width">
+            <textarea matInput placeholder="Critic consensus" formControlName="criticConsensus"></textarea>
+          </mat-form-field>
+        </div>
+      </div>      
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" type="submit">Save</button>
+      <button mat-raised-button color="warn" type="button" (click)="goBack()">Cancel</button>
+    </mat-card-actions>
+  </mat-card>
+</form>
+
+```
+
+And corresponding *oscar-details.component.ts*:
+```typescript
+export class OscarsDetailsComponent {
+  detailsForm = this.fb.group({
+    id: null,
+    title: [null, Validators.required],
+    oscarYear: [null, Validators.required],
+    studio: [null, Validators.required],
+    award: null,
+    yearOfRelease: [null, Validators.compose([ Validators.required, Validators.pattern('[0-9]{4}')])],
+    movieTime: null,
+    genre: null,
+    genres: [null, Validators.required],
+    imdbRating: null,
+    imdbVotes: null,
+    moveInfo: null,
+    criticConsensus: null,
+    contentRating: null
+  });
+
+  genres = [
+    'Action & Adventure',
+    'Adventure',
+    'Animation', 
+    'Art House & International', 
+    'Biography',
+    'Classics', 
+    'Comedy', 
+    'Crime',
+    'Cult Movies', 
+    'Documentary', 
+    'Drama', 
+    'Faith & Spirituality',
+    'Family',
+    'Film-Noir',
+    'Gay & Lesbian',
+    'History',
+    'Horror', 
+    'Kids & Family', 
+    'Music',
+    'Musical',
+    'Musical & Performing Arts', 
+    'Mystery & Suspense', 
+    'Romance', 
+    'Science Fiction & Fantasy', 
+    'Special Interest', 
+    'Sports & Fitness',
+    'Television',
+    'War',
+    'Western', 
+  ]
+
+  private dataSource: OscarsDataSource;
+
+  constructor(
+    private fb: FormBuilder,
+    private route: ActivatedRoute,
+    private location: Location,
+    http: HttpClient) {
+      this.dataSource = new OscarsDataSource(http);
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe((params) => {
+      if (params.id != '_new')
+        this.dataSource.getItem(params.id).subscribe({
+          next: (item) => {
+            this.detailsForm.controls['genres'].setValue(item.genre.split(",")); 
+            this.detailsForm.patchValue(item) 
+          }
+        });
+    });
+  }
+
+  onSubmit(): void {
+    this.detailsForm.controls['genre'].setValue(
+      this.detailsForm.controls['genres'].value.map((x: string)=>x).join(",")
+    );
+    if (this.route.snapshot.paramMap.get('id') == '_new')
+      this.dataSource.addItem(this.detailsForm.value).subscribe(
+        data => { console.log('Success ', data), this.location.back(); },
+        error => console.error('Opps ', error)
+      );
+    else
+      this.dataSource.updateItem(this.detailsForm.value).subscribe(
+        data => { console.log('Success ', data), this.location.back(); },
+        error => console.error('Opps ', error)
+      );  
+  }
+
+  goBack(): void {
+    this.location.back();
+  }
+}
+```
+
+Add actions column in table (*oscars.component.html*):
+```html
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions
+        <button mat-icon-button matTooltip="Click to Edit" class="iconbutton" color="primary" routerLink="/oscars/_new">
+          <mat-icon aria-label="Add">add</mat-icon>
+        </button>      
+      </th>
+      <td mat-cell *matCellDef="let row">
+        <button mat-icon-button matTooltip="Click to Edit" class="iconbutton" color="primary" routerLink="/oscars/{{row.id}}">
+          <mat-icon aria-label="Edit">edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Click to Delete" class="iconbutton" color="warn" (click)="openDialog('Delete', row)">
+          <mat-icon aria-label="Delete">delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+```
+
+And *oscars.component.ts*):
+```typescript
+  /** Columns displayed in the table. Columns IDs can be added, removed, or reordered. */
+  displayedColumns = ['id', 'title', 'oscarYear', 'studio', 'award', 'yearOfRelease', 'movieTime', 'genre', 'actions'];
+
+  constructor(private http: HttpClient, public dialog: MatDialog) {
+    this.dataSource = new OscarsDataSource(http);
+  }
+
+  ngAfterViewInit(): void {
+    this.dataSource.sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+    this.table.dataSource = this.dataSource;
+  }
+
+  onPageChange(event: PageEvent) {
+    console.log(event)
+    this.dataSource.paginator
+  }
+
+  openDialog(action: string, obj) {
+    obj.action = action;
+    const dialogRef = this.dialog.open(OscarsDeleteComponent, {
+      data:obj
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if(result.event == 'Add'){
+        this.dataSource.addItem(result.data).subscribe();
+      }else if(result.event == 'Update'){
+        this.dataSource.updateItem(result.data).subscribe();
+      }else if(result.event == 'Delete'){
+        this.dataSource.deleteItem(result.data).subscribe();
+      }
+    });
+  }
+```
+
+Add CRUD methods in *oscars-datasource.ts*:
+```typescript
+  public getItem(id: number): Observable<OscarsItem> {
+    return this.http.get<OscarsItem>(this.apiUrl + '/' + id);
+  }
+
+  public addItem(newItem: OscarsItem) {
+    return this.http.post<OscarsItem>(this.apiUrl, newItem)
+      .pipe(
+        catchError(this.handleError),
+        map((savedItem) => {
+          this.data.push(savedItem);
+          if (this.paginator !== undefined)
+              this.paginator.page.emit();
+        })
+      );
+  }
+
+  public updateItem(updatedItem: OscarsItem): Observable<void> {
+    console.log(updatedItem);
+    return this.http.put<OscarsItem>(this.apiUrl + '/' + updatedItem.id, updatedItem)
+      .pipe(
+        catchError(this.handleError),
+        map((savedItem) => {
+          this.data = this.data.filter((value, key) => {
+            if(value.id == savedItem.id && this.paginator !== undefined) {
+              this.paginator.page.emit();
+            }
+            return true;
+          })
+        }
+        )
+      );
+  }
+
+  deleteItem(deletedItem: OscarsItem): Observable<void> {
+    return this.http.delete(this.apiUrl + '/' + deletedItem.id)
+      .pipe(
+        catchError(this.handleError),
+        map(() => {
+          this.data = this.data.filter((value) => {
+            return value.id != deletedItem.id;
+          });
+          if (this.paginator !== undefined)
+            this.paginator.page.emit();
+        })
+      );
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    if (error.status === 0) {
+      // A client-side or network error occurred. Handle it accordingly.
+      console.error('An error occurred:', error.error);
+    } else {
+      // The backend returned an unsuccessful response code.
+      // The response body may contain clues as to what went wrong.
+      console.error(
+        `Backend returned code ${error.status}, ` +
+        `body was: ${error.error}`);
+    }
+    // Return an observable with a user-facing error message.
+    return throwError(
+      'Something bad happened; please try again later.');
+  }
+```
+
+This new component is ok for adding and editing records. Unfortunately deleting needs diffrent component with simple confirmation. Let's generate:
+```bash
+$ ng generate component oscars/oscars-delete --flat
+```
+
+Change component (*oscars-delete.component.html* and *oscars-delete.component.ts*):
+```html
+<h1 mat-dialog-title>Delete Oscar movie record</h1>
+<div mat-dialog-content class="dialog">
+    Sure to delete movie "<b>{{local_data.title}}</b>" from <b>{{local_data.yearOfRelease}}</b> year?
+</div>
+<div mat-dialog-actions style="justify-content: flex-end;">
+    <button mat-button (click)="doAction()"    mat-flat-button color="primary">Delete</button>
+    <button mat-button (click)="closeDialog()" mat-flat-button color="warn">Cancel</button>
+</div>
+```
+
+```typescript
+export class OscarsDeleteComponent {
+
+  action:string;
+  local_data:OscarsItem;
+
+  constructor(    
+    public dialogRef: MatDialogRef<OscarsDeleteComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any) {
+    this.local_data = {...data};
+    this.action = data.action;
+  }
+
+  doAction(){
+    this.dialogRef.close({event:this.action,data:this.local_data});
+  }
+
+  closeDialog(){
+    this.dialogRef.close({event:'Cancel'});
+  }
+}
+```
+
+## Record summary in table
+
+Now everythigs work fine, but one thing can be improved. Even if the table doesn't show all record's fields always all fields are been read from database and sent over the net. In this case it's not the problem but for records in parent - child relation it can be issue. 
+
+We have to create "summary" class which will have a few common fileds with a "full" class. These fields will be extracted to third, base class.
+```java
+@MappedSuperclass
+public abstract class OscarBase {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	public Integer id;
+	public String title;
+	public String oscarYear;
+	public String studio;
+	public String award;
+	public Integer yearOfRelease;
+	public Integer movieTime;
+	public String genre;
+}
+```
+
+```java
+@Entity(name = "OscarSummary")
+@Table(name = "oscars")
+public class OscarSummary extends OscarBase{
+}
+```
+
+```java
+@Entity(name = "Oscar")
+@Table(name = "oscars")
+public class Oscar extends OscarBase {
+	public Double imdbRating;
+	public Integer imdbVotes;
+	public String moveInfo;
+	public String criticConsensus;
+	public String contenRating;
+}
+```
+
+Declare summary repository:
+```java
+public interface OscarSummaryRepository extends PagingAndSortingRepository<OscarSummary, Integer> {
+
+}
+```
+
+And correct controller to use summary classes in getAll() method:
+```java
+	@Autowired
+	private OscarSummaryRepository summaryRepository;
+	
+	@GetMapping("/api/oscars")
+	public @ResponseBody Iterable<OscarSummary> getAll(
+			@RequestParam(required = false) Integer pageNo, 
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(defaultValue = "id-asc") String[] sortBy) {
+		
+		List<Order> orders = new ArrayList<Order>();
+		for (String sortOrder : sortBy) {
+			String[] _sort = sortOrder.split("-");
+			orders.add(new Order(getSortDirection(_sort[1]), _sort[0]));
+		}
+		if (pageNo != null)
+			return  summaryRepository.findAll(PageRequest.of(pageNo, pageSize, Sort.by(orders)));
+		else
+			return summaryRepository.findAll(Sort.by(orders));
+	}
+```
 
 
 References:
 1. https://howtodoinjava.com/spring-boot2/pagination-sorting-example/
 2. https://www.bezkoder.com/spring-boot-pagination-sorting-example/
 3. https://angular.io/guide/rx-library
+4. https://vladmihalcea.com/map-multiple-jpa-entities-one-table-hibernate/

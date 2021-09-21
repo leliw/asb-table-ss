@@ -22,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class OscarController {
 	@Autowired
 	private OscarRepository repository;
+	@Autowired
+	private OscarSummaryRepository summaryRepository;
 	
 	@GetMapping("/api/oscars")
-	public @ResponseBody Iterable<Oscar> getAll(
+	public @ResponseBody Iterable<OscarSummary> getAll(
 			@RequestParam(required = false) Integer pageNo, 
             @RequestParam(required = false) Integer pageSize,
             @RequestParam(defaultValue = "id-asc") String[] sortBy) {
@@ -35,9 +37,9 @@ public class OscarController {
 			orders.add(new Order(getSortDirection(_sort[1]), _sort[0]));
 		}
 		if (pageNo != null)
-			return  repository.findAll(PageRequest.of(pageNo, pageSize, Sort.by(orders)));
+			return  summaryRepository.findAll(PageRequest.of(pageNo, pageSize, Sort.by(orders)));
 		else
-			return repository.findAll(Sort.by(orders));
+			return summaryRepository.findAll(Sort.by(orders));
 	}
 	
 	private Direction getSortDirection(String dir) {
